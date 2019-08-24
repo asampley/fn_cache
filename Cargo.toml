@@ -7,7 +7,7 @@ documentation = "https://docs.rs/fn-cache"
 repository = "https://github.com/asampley/fn_cache"
 
 keywords = ["cache", "memoization"]
-categories = ["Caching"]
+categories = ["caching"]
 
 authors = ["Alex Sampley <sampley@ualberta.ca>"]
 license = "MIT"
