@@ -5,6 +5,7 @@ description = "A copy-less and clone-less function caching library"
 
 documentation = "https://docs.rs/fn-cache"
 repository = "https://github.com/asampley/fn_cache"
+readme = "README.md"
 
 keywords = ["cache", "memoization"]
 categories = ["caching"]
