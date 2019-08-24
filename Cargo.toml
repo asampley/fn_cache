@@ -1,0 +1,8 @@
+[package]
+name = "fn-cache"
+version = "0.1.0"
+authors = ["Alex Sampley <sampley@ualberta.ca>"]
+edition = "2018"
+
+[dev-dependencies]
+num-bigint = "0.2"
