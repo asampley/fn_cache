@@ -1,7 +1,16 @@
 [package]
 name = "fn-cache"
 version = "0.1.0"
+description = "A copy-less and clone-less function caching library"
+
+documentation = "https://docs.rs/fn-cache"
+repository = "https://github.com/asampley/fn_cache"
+
+keywords = ["cache", "memoization"]
+categories = ["Caching"]
+
 authors = ["Alex Sampley <sampley@ualberta.ca>"]
+license = "MIT"
 edition = "2018"
 
 [dev-dependencies]
