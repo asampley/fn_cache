@@ -51,15 +51,21 @@ where
 
 		while self.cache.len() <= input {
 			let next = self.cache.len();
-			let next_val = self.function(next).into();
+			let next_val = self.compute(next).into();
 			self.cache.push(next_val);
 		}
 
 		self.cache.get(input).unwrap()
 	}
 
-	fn function(&mut self, input: usize) -> V {
+	fn compute(&mut self, input: usize) -> V {
 		unsafe { (*self.f)(self, input).into() }
+	}
+
+	/// Clears the cache. removing all values.
+	/// Keeps the allocated memory for reuse.
+	pub fn clear(&mut self) {
+		self.cache.clear();
 	}
 }
 

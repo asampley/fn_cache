@@ -55,13 +55,19 @@ where
 		if self.cache.contains_key(&input) {
 			self.cache.index(&input)
 		} else {
-			let output = self.function(&input);
+			let output = self.compute(&input);
 			self.cache.entry(input).or_insert(output.into())
 		}
 	}
 
-	fn function(&mut self, input: &I) -> O {
+	fn compute(&mut self, input: &I) -> O {
 		unsafe { (*self.f)(self, input) }
+	}
+
+	/// Clears the cache, removing all key-value pairs.
+	/// Keeps the allocated memory for reuse.
+	pub fn clear(&mut self) {
+		self.cache.clear();
 	}
 }
 
