@@ -157,9 +157,54 @@ fn clear() {
 	hc.get(1);
 	hc.get(2);
 
-	assert_eq!(hc.cache.len(), 3);
+	assert_eq!(hc.len(), 3);
 
 	hc.clear();
 
-	assert_eq!(hc.cache.len(), 0);
+	assert_eq!(hc.len(), 0);
+}
+
+#[test]
+fn len() {
+	let mut hc = HashCache::<usize,usize>::new(|_cache, x| *x);
+
+	hc.get(0);
+	hc.get(1);
+	hc.get(2);
+
+	assert_eq!(hc.len(), 3);
+}
+
+#[test]
+fn reserve() {
+	let mut hc = HashCache::<usize,usize>::new(|_cache, x| *x);
+
+	hc.get(0);
+	hc.get(1);
+	hc.get(2);
+
+	for additional in 20..60 {
+		hc.cache.shrink_to_fit();
+		hc.reserve(additional);
+
+		assert!(
+			hc.len() + additional <= hc.cache.capacity(),
+			"len = {}, capacity = {}, additional = {}",
+			hc.len(), hc.cache.capacity(), additional
+		);
+	}
+}
+
+#[test]
+fn remove() {
+	let mut hc = HashCache::<usize,usize>::new(|_cache, x| *x);
+
+	hc.get(0);
+	hc.get(1);
+	hc.get(2);
+
+	assert_eq!(hc.len(), 3);
+	assert_eq!(hc.remove(&1), Some(1));
+	assert_eq!(hc.len(), 2);
+	assert_eq!(hc.remove(&1), None);
 }

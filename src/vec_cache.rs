@@ -67,6 +67,18 @@ where
 	pub fn clear(&mut self) {
 		self.cache.clear();
 	}
+
+	/// Returns the number of elements in the cache.
+	pub fn len(&self) -> usize {
+		self.cache.len()
+	}
+
+	/// Reserves capacity for at least `additional` more elements
+	/// to be inserted in the cache. The collection may
+	/// reserve more space to avoid frequent reallocations.
+	pub fn reserve(&mut self, additional: usize) {
+		self.cache.reserve(additional)
+	}
 }
 
 #[doc(hidden)]

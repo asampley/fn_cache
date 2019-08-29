@@ -146,3 +146,34 @@ fn clear() {
 
 	assert_eq!(vc.cache.len(), 0);
 }
+
+#[test]
+fn len() {
+	let mut vc = VecCache::<usize>::new(|_cache, x| x);
+
+	vc.get(0);
+	vc.get(1);
+	vc.get(2);
+
+	assert_eq!(vc.len(), 3);
+}
+
+#[test]
+fn reserve() {
+	let mut vc = VecCache::<usize>::new(|_cache, x| x);
+
+	vc.get(0);
+	vc.get(1);
+	vc.get(2);
+
+	for additional in 20..60 {
+		vc.cache.shrink_to_fit();
+		vc.reserve(additional);
+
+		assert!(
+			vc.len() + additional <= vc.cache.capacity(),
+			"len = {}, capacity = {}, additional = {}",
+			vc.len(), vc.cache.capacity(), additional
+		);
+	}
+}
