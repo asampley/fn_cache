@@ -29,7 +29,7 @@
 //! O(n), and can easily be calculated.
 //!
 //! ```rust
-//! use fn_cache::HashCache;
+//! use fn_cache::{FnCache, HashCache};
 //!
 //! let mut cache = HashCache::<u8,u128>::new(|cache, x|
 //!     match x {
@@ -54,7 +54,7 @@
 //!
 //! ```rust
 //! use std::rc::Rc;
-//! use fn_cache::HashCache;
+//! use fn_cache::{FnCache, HashCache};
 //! use num_bigint::BigUint;
 //!
 //! let mut cache = HashCache::<u64,BigUint,Rc<BigUint>>::new(|cache, x|
@@ -79,9 +79,13 @@
 //! [HashCache]: struct.HashCache.html
 //! [Rc]: https://doc.rust-lang.org/std/rc/struct.Rc.html
 //! [num]: https://docs.rs/num/
+mod fn_cache;
 mod hash_cache;
 mod vec_cache;
+mod btree_cache;
 mod tests;
 
-pub use hash_cache::HashCache;
-pub use vec_cache::VecCache;
+pub use crate::fn_cache::FnCache;
+pub use crate::hash_cache::HashCache;
+pub use crate::vec_cache::VecCache;
+pub use crate::btree_cache::BTreeCache;

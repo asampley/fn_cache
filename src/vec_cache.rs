@@ -1,3 +1,5 @@
+use crate::FnCache;
+
 /// A cache for a function which uses a `Vec`.
 ///
 /// This cache is optimized for functions which must
@@ -18,31 +20,14 @@ where
 	O: Into<V>,
 {
 	pub(crate) cache: Vec<V>,
-	f: *mut (dyn Fn(&mut Self, usize) -> O + 'a),
+	f: *mut (dyn Fn(&mut Self, &usize) -> O + 'a),
 }
 
-impl<'a,O,V> VecCache<'a,O,V>
+impl<'a,O,V> FnCache<usize,V> for VecCache<'a,O,V>
 where
 	O: Into<V>,
 {
-	/// Create a cache for the provided function. If the
-	/// function stores references, the cache can only
-	/// live as long as those references.
-	pub fn new<F>(f: F) -> Self
-	where
-		F: Fn(&mut Self, usize) -> O + 'a
-	{
-		VecCache {
-			cache: Vec::default(),
-			f: Box::into_raw(Box::from(f)),
-		}
-	}
-
-	/// Retrieve a value stored in the cache. If the
-	/// value does not yet exist in the cache, the
-	/// function is called, and the result is added
-	/// to the cache before returning it.
-	pub fn get(&mut self, input: usize) -> &V {
+	fn get(&mut self, input: usize) -> &V {
 		let len = self.cache.len();
 
 		if len <= input {
@@ -57,9 +42,27 @@ where
 
 		self.cache.get(input).unwrap()
 	}
+}
+
+impl<'a,O,V> VecCache<'a,O,V>
+where
+	O: Into<V>,
+{
+	/// Create a cache for the provided function. If the
+	/// function stores references, the cache can only
+	/// live as long as those references.
+	pub fn new<F>(f: F) -> Self
+	where
+		F: Fn(&mut Self, &usize) -> O + 'a
+	{
+		VecCache {
+			cache: Vec::default(),
+			f: Box::into_raw(Box::from(f)),
+		}
+	}
 
 	fn compute(&mut self, input: usize) -> V {
-		unsafe { (*self.f)(self, input).into() }
+		unsafe { (*self.f)(self, &input).into() }
 	}
 
 	/// Clears the cache. removing all values.

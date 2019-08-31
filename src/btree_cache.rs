@@ -1,12 +1,11 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
-use core::cmp::Eq;
-use core::hash::Hash;
 use core::ops::Index;
+use core::cmp::Ord;
 
 use crate::FnCache;
 
-/// A cache for a function which uses a `HashMap`.
+/// A cache for a function which uses a `BTreeMap`.
 ///
 /// The cache takes ownership of all inputs, but
 /// only passes a reference to the function,
@@ -18,22 +17,19 @@ use crate::FnCache;
 /// `O` implements `Into<V>`. If no conversion is
 /// required, than the `V` parameter can be elided.
 ///
-/// The requirements for a `HashMap` must be met,
-/// specifically the keys must implement `Eq` and
-/// `Hash`, and the following propery must hold:
-///
-/// ```k1 == k2 -> hash(k1) == hash(k2)```
-pub struct HashCache<'a,I,O,V=O>
+/// The requirements for a `BTreeMap` must be met,
+/// specifically the keys must implement `Ord`
+pub struct BTreeCache<'a,I,O,V=O>
 where
-	I: Eq + Hash,
+	I: Ord,
 {
-	pub(crate) cache: HashMap<I,V>,
+	pub(crate) cache: BTreeMap<I,V>,
 	f: *mut (dyn Fn(&mut Self, &I) -> O + 'a),
 }
 
-impl<'a,I,O,V> FnCache<I,V> for HashCache<'a,I,O,V>
+impl<'a,I,O,V> FnCache<I,V> for BTreeCache<'a,I,O,V>
 where
-	I: Eq + Hash,
+	I: Ord,
 	O: Into<V>,
 {
 	fn get(&mut self, input: I) -> &V {
@@ -46,9 +42,9 @@ where
 	}
 }
 
-impl<'a,I,O,V> HashCache<'a,I,O,V>
+impl<'a,I,O,V> BTreeCache<'a,I,O,V>
 where
-	I: Eq + Hash,
+	I: Ord,
 	O: Into<V>,
 {
 	/// Create a cache for the provided function. If the
@@ -58,12 +54,11 @@ where
 	where
 		F: Fn(&mut Self, &I) -> O + 'a
 	{
-		HashCache {
-			cache: HashMap::default(),
+		Self {
+			cache: BTreeMap::default(),
 			f: Box::into_raw(Box::new(f)),
 		}
 	}
-
 
 	fn compute(&mut self, input: &I) -> O {
 		unsafe { (*self.f)(self, input) }
@@ -80,13 +75,6 @@ where
 		self.cache.len()
 	}
 
-	/// Reserves capacity for at least `additional` more elements
-	/// to be inserted in the cache. The collection may
-	/// reserve more space to avoid frequent reallocations.
-	pub fn reserve(&mut self, additional: usize) {
-		self.cache.reserve(additional)
-	}
-
 	/// Removes the input from the cache, returning any value
 	/// if the input was previously in the cache.
 	pub fn remove(&mut self, input: &I) -> Option<V> {
@@ -95,9 +83,9 @@ where
 }
 
 #[doc(hidden)]
-impl<'a,I,O,V> Drop for HashCache<'a,I,O,V>
+impl<'a,I,O,V> Drop for BTreeCache<'a,I,O,V>
 where
-	I: Eq + Hash,
+	I: Ord,
 {
 	fn drop(&mut self) {
 		#[allow(unused_must_use)]

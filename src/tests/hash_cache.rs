@@ -1,16 +1,8 @@
-use super::*;
+use std::rc::Rc;
 
-fn square(_cache: &mut HashCache<u32,u64>, x: &u32) -> u64 {
-	*x as u64 * *x as u64
-}
-
-fn fib(cache: &mut HashCache<u32,u64>, x: &u32) -> u64 {
-	match x {
-		0 => 0,
-		1 => 1,
-		_ => *cache.get(x - 1) + *cache.get(x - 2),
-	}
-}
+use crate::HashCache;
+use crate::FnCache;
+use crate::tests::*;
 
 #[test]
 fn get_fn_ptr() {
@@ -31,7 +23,7 @@ fn get_fn_ptr() {
 
 #[test]
 fn get_closure() {
-	let mut hc = HashCache::<u32,u64>::new(|_cache, &x| x as u64 * x as u64);
+	let mut hc = HashCache::<usize,u64>::new(|_cache, &x| x as u64 * x as u64);
 
 	assert!(!hc.cache.contains_key(&1));
 	assert_eq!(hc.get(1), &1);
@@ -50,7 +42,7 @@ fn get_closure() {
 fn get_closure_capture() {
 	let y = 3;
 
-	let mut hc = HashCache::<u32,u64>::new(|_cache, &x| y * x as u64 * x as u64);
+	let mut hc = HashCache::<usize,u64>::new(|_cache, &x| y * x as u64 * x as u64);
 
 	assert!(!hc.cache.contains_key(&1));
 	assert_eq!(hc.get(1), &3);

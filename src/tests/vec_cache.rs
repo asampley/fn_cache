@@ -1,16 +1,8 @@
-use super::*;
+use std::rc::Rc;
 
-fn square(_cache: &mut VecCache<u64>, x: usize) -> u64 {
-	x as u64 * x as u64
-}
-
-fn fib(cache: &mut VecCache<u64>, x: usize) -> u64 {
-	match x {
-		0 => 0,
-		1 => 1,
-		_ => *cache.get(x - 1) + *cache.get(x - 2),
-	}
-}
+use crate::VecCache;
+use crate::FnCache;
+use crate::tests::*;
 
 #[test]
 fn cache_fn_ptr() {
@@ -32,7 +24,7 @@ fn cache_fn_ptr() {
 
 #[test]
 fn cache_closure() {
-	let mut vc = VecCache::<u64>::new(|_cache, x| x as u64 * x as u64);
+	let mut vc = VecCache::<u64>::new(|_cache, x| *x as u64 * *x as u64);
 
 	assert_eq!(vc.cache.len(), 0);
 	assert_eq!(vc.get(0), &0);
@@ -52,7 +44,7 @@ fn cache_closure() {
 fn cache_closure_capture() {
 	let y = 3;
 
-	let mut vc = VecCache::<u64>::new(|_cache, x| y * x as u64 * x as u64);
+	let mut vc = VecCache::<u64>::new(|_cache, x| y * *x as u64 * *x as u64);
 
 	assert_eq!(vc.cache.len(), 0);
 	assert_eq!(vc.get(0), &0);
@@ -136,7 +128,7 @@ fn cache_alternate_cache() {
 
 #[test]
 fn clear() {
-	let mut vc = VecCache::<usize>::new(|_cache, x| x);
+	let mut vc = VecCache::<usize>::new(|_cache, x| *x);
 
 	vc.get(2);
 
@@ -149,7 +141,7 @@ fn clear() {
 
 #[test]
 fn len() {
-	let mut vc = VecCache::<usize>::new(|_cache, x| x);
+	let mut vc = VecCache::<usize>::new(|_cache, x| *x);
 
 	vc.get(0);
 	vc.get(1);
@@ -160,7 +152,7 @@ fn len() {
 
 #[test]
 fn reserve() {
-	let mut vc = VecCache::<usize>::new(|_cache, x| x);
+	let mut vc = VecCache::<usize>::new(|_cache, x| *x);
 
 	vc.get(0);
 	vc.get(1);
