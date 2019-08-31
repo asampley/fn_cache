@@ -79,13 +79,13 @@
 //! [HashCache]: struct.HashCache.html
 //! [Rc]: https://doc.rust-lang.org/std/rc/struct.Rc.html
 //! [num]: https://docs.rs/num/
+mod btree_cache;
 mod fn_cache;
 mod hash_cache;
-mod vec_cache;
-mod btree_cache;
 mod tests;
+mod vec_cache;
 
+pub use crate::btree_cache::BTreeCache;
 pub use crate::fn_cache::FnCache;
 pub use crate::hash_cache::HashCache;
 pub use crate::vec_cache::VecCache;
-pub use crate::btree_cache::BTreeCache;

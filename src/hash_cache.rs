@@ -23,15 +23,15 @@ use crate::FnCache;
 /// `Hash`, and the following propery must hold:
 ///
 /// ```k1 == k2 -> hash(k1) == hash(k2)```
-pub struct HashCache<'a,I,O,V=O>
+pub struct HashCache<'a, I, O, V = O>
 where
 	I: Eq + Hash,
 {
-	pub(crate) cache: HashMap<I,V>,
+	pub(crate) cache: HashMap<I, V>,
 	f: *mut (dyn Fn(&mut Self, &I) -> O + 'a),
 }
 
-impl<'a,I,O,V> FnCache<I,V> for HashCache<'a,I,O,V>
+impl<'a, I, O, V> FnCache<I, V> for HashCache<'a, I, O, V>
 where
 	I: Eq + Hash,
 	O: Into<V>,
@@ -46,7 +46,7 @@ where
 	}
 }
 
-impl<'a,I,O,V> HashCache<'a,I,O,V>
+impl<'a, I, O, V> HashCache<'a, I, O, V>
 where
 	I: Eq + Hash,
 	O: Into<V>,
@@ -56,14 +56,13 @@ where
 	/// live as long as those references.
 	pub fn new<F>(f: F) -> Self
 	where
-		F: Fn(&mut Self, &I) -> O + 'a
+		F: Fn(&mut Self, &I) -> O + 'a,
 	{
 		HashCache {
 			cache: HashMap::default(),
 			f: Box::into_raw(Box::new(f)),
 		}
 	}
-
 
 	fn compute(&mut self, input: &I) -> O {
 		unsafe { (*self.f)(self, input) }
@@ -95,12 +94,14 @@ where
 }
 
 #[doc(hidden)]
-impl<'a,I,O,V> Drop for HashCache<'a,I,O,V>
+impl<'a, I, O, V> Drop for HashCache<'a, I, O, V>
 where
 	I: Eq + Hash,
 {
 	fn drop(&mut self) {
 		#[allow(unused_must_use)]
-		unsafe { Box::from_raw(self.f); }
+		unsafe {
+			Box::from_raw(self.f);
+		}
 	}
 }

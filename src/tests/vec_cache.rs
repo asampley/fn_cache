@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
-use crate::VecCache;
-use crate::FnCache;
 use crate::tests::*;
+use crate::FnCache;
+use crate::VecCache;
 
 #[test]
 fn cache_fn_ptr() {
@@ -80,13 +80,11 @@ fn cache_fn_ptr_recursive() {
 
 #[test]
 fn cache_closure_recursive() {
-	let mut vc = VecCache::<u64>::new(|cache, x|
-		match x {
-			0 => 0,
-			1 => 1,
-			_ => *cache.get(x - 1) + *cache.get(x - 2),
-		}
-	);
+	let mut vc = VecCache::<u64>::new(|cache, x| match x {
+		0 => 0,
+		1 => 1,
+		_ => *cache.get(x - 1) + *cache.get(x - 2),
+	});
 
 	assert_eq!(vc.cache.len(), 0);
 	assert_eq!(vc.get(0), &0);
@@ -104,13 +102,11 @@ fn cache_closure_recursive() {
 
 #[test]
 fn cache_alternate_cache() {
-	let mut vc = VecCache::<u64,Rc<u64>>::new(|cache, x|
-		match x {
-			0 => 0,
-			1 => 1,
-			_ => *cache.get(x - 1).clone() + *cache.get(x - 2).clone(),
-		}
-	);
+	let mut vc = VecCache::<u64, Rc<u64>>::new(|cache, x| match x {
+		0 => 0,
+		1 => 1,
+		_ => *cache.get(x - 1).clone() + *cache.get(x - 2).clone(),
+	});
 
 	assert_eq!(vc.cache.len(), 0);
 	assert_eq!(*vc.get(0).clone(), 0);
@@ -165,7 +161,9 @@ fn reserve() {
 		assert!(
 			vc.len() + additional <= vc.cache.capacity(),
 			"len = {}, capacity = {}, additional = {}",
-			vc.len(), vc.cache.capacity(), additional
+			vc.len(),
+			vc.cache.capacity(),
+			additional
 		);
 	}
 }

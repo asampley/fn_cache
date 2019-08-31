@@ -15,7 +15,7 @@ use crate::FnCache;
 /// the output of the function `O`, as long as
 /// `O` implements `Into<V>`. If no conversion is
 /// required, than the `V` parameter can be elided.
-pub struct VecCache<'a,O,V=O>
+pub struct VecCache<'a, O, V = O>
 where
 	O: Into<V>,
 {
@@ -23,7 +23,7 @@ where
 	f: *mut (dyn Fn(&mut Self, &usize) -> O + 'a),
 }
 
-impl<'a,O,V> FnCache<usize,V> for VecCache<'a,O,V>
+impl<'a, O, V> FnCache<usize, V> for VecCache<'a, O, V>
 where
 	O: Into<V>,
 {
@@ -44,7 +44,7 @@ where
 	}
 }
 
-impl<'a,O,V> VecCache<'a,O,V>
+impl<'a, O, V> VecCache<'a, O, V>
 where
 	O: Into<V>,
 {
@@ -53,7 +53,7 @@ where
 	/// live as long as those references.
 	pub fn new<F>(f: F) -> Self
 	where
-		F: Fn(&mut Self, &usize) -> O + 'a
+		F: Fn(&mut Self, &usize) -> O + 'a,
 	{
 		VecCache {
 			cache: Vec::default(),
@@ -85,12 +85,14 @@ where
 }
 
 #[doc(hidden)]
-impl<'a,O,V> Drop for VecCache<'a,O,V>
+impl<'a, O, V> Drop for VecCache<'a, O, V>
 where
 	O: Into<V>,
 {
 	fn drop(&mut self) {
 		#[allow(unused_must_use)]
-		unsafe { Box::from_raw(self.f); }
+		unsafe {
+			Box::from_raw(self.f);
+		}
 	}
 }

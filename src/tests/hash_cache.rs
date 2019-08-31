@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
-use crate::HashCache;
-use crate::FnCache;
 use crate::tests::*;
+use crate::FnCache;
+use crate::HashCache;
 
 #[test]
 fn get_fn_ptr() {
@@ -23,7 +23,7 @@ fn get_fn_ptr() {
 
 #[test]
 fn get_closure() {
-	let mut hc = HashCache::<usize,u64>::new(|_cache, &x| x as u64 * x as u64);
+	let mut hc = HashCache::<usize, u64>::new(|_cache, &x| x as u64 * x as u64);
 
 	assert!(!hc.cache.contains_key(&1));
 	assert_eq!(hc.get(1), &1);
@@ -42,7 +42,7 @@ fn get_closure() {
 fn get_closure_capture() {
 	let y = 3;
 
-	let mut hc = HashCache::<usize,u64>::new(|_cache, &x| y * x as u64 * x as u64);
+	let mut hc = HashCache::<usize, u64>::new(|_cache, &x| y * x as u64 * x as u64);
 
 	assert!(!hc.cache.contains_key(&1));
 	assert_eq!(hc.get(1), &3);
@@ -83,13 +83,11 @@ fn get_fn_ptr_recursive() {
 
 #[test]
 fn get_closure_recursive() {
-	let mut hc = HashCache::<usize,u64>::new(|cache, x|
-		match x {
-			0 => 0,
-			1 => 1,
-			_ => *cache.get(x - 1) + *cache.get(x - 2),
-		}
-	);
+	let mut hc = HashCache::<usize, u64>::new(|cache, x| match x {
+		0 => 0,
+		1 => 1,
+		_ => *cache.get(x - 1) + *cache.get(x - 2),
+	});
 
 	assert!(!hc.cache.contains_key(&1));
 	assert_eq!(hc.get(1), &1);
@@ -113,13 +111,11 @@ fn get_closure_recursive() {
 
 #[test]
 fn get_alternate_value() {
-	let mut hc = HashCache::<usize,u64,Rc<u64>>::new(|cache, x|
-		match x {
-			0 => 0,
-			1 => 1,
-			_ => *cache.get(x - 1).clone() + *cache.get(x - 2).clone(),
-		}
-	);
+	let mut hc = HashCache::<usize, u64, Rc<u64>>::new(|cache, x| match x {
+		0 => 0,
+		1 => 1,
+		_ => *cache.get(x - 1).clone() + *cache.get(x - 2).clone(),
+	});
 
 	assert!(!hc.cache.contains_key(&1));
 	assert_eq!(*hc.get(1).clone(), 1);
@@ -143,7 +139,7 @@ fn get_alternate_value() {
 
 #[test]
 fn clear() {
-	let mut hc = HashCache::<usize,usize>::new(|_cache, x| *x);
+	let mut hc = HashCache::<usize, usize>::new(|_cache, x| *x);
 
 	hc.get(0);
 	hc.get(1);
@@ -158,7 +154,7 @@ fn clear() {
 
 #[test]
 fn len() {
-	let mut hc = HashCache::<usize,usize>::new(|_cache, x| *x);
+	let mut hc = HashCache::<usize, usize>::new(|_cache, x| *x);
 
 	hc.get(0);
 	hc.get(1);
@@ -169,7 +165,7 @@ fn len() {
 
 #[test]
 fn reserve() {
-	let mut hc = HashCache::<usize,usize>::new(|_cache, x| *x);
+	let mut hc = HashCache::<usize, usize>::new(|_cache, x| *x);
 
 	hc.get(0);
 	hc.get(1);
@@ -182,14 +178,16 @@ fn reserve() {
 		assert!(
 			hc.len() + additional <= hc.cache.capacity(),
 			"len = {}, capacity = {}, additional = {}",
-			hc.len(), hc.cache.capacity(), additional
+			hc.len(),
+			hc.cache.capacity(),
+			additional
 		);
 	}
 }
 
 #[test]
 fn remove() {
-	let mut hc = HashCache::<usize,usize>::new(|_cache, x| *x);
+	let mut hc = HashCache::<usize, usize>::new(|_cache, x| *x);
 
 	hc.get(0);
 	hc.get(1);

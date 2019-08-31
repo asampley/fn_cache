@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
-use core::ops::Index;
 use core::cmp::Ord;
+use core::ops::Index;
 
 use crate::FnCache;
 
@@ -19,15 +19,15 @@ use crate::FnCache;
 ///
 /// The requirements for a `BTreeMap` must be met,
 /// specifically the keys must implement `Ord`
-pub struct BTreeCache<'a,I,O,V=O>
+pub struct BTreeCache<'a, I, O, V = O>
 where
 	I: Ord,
 {
-	pub(crate) cache: BTreeMap<I,V>,
+	pub(crate) cache: BTreeMap<I, V>,
 	f: *mut (dyn Fn(&mut Self, &I) -> O + 'a),
 }
 
-impl<'a,I,O,V> FnCache<I,V> for BTreeCache<'a,I,O,V>
+impl<'a, I, O, V> FnCache<I, V> for BTreeCache<'a, I, O, V>
 where
 	I: Ord,
 	O: Into<V>,
@@ -42,7 +42,7 @@ where
 	}
 }
 
-impl<'a,I,O,V> BTreeCache<'a,I,O,V>
+impl<'a, I, O, V> BTreeCache<'a, I, O, V>
 where
 	I: Ord,
 	O: Into<V>,
@@ -52,7 +52,7 @@ where
 	/// live as long as those references.
 	pub fn new<F>(f: F) -> Self
 	where
-		F: Fn(&mut Self, &I) -> O + 'a
+		F: Fn(&mut Self, &I) -> O + 'a,
 	{
 		Self {
 			cache: BTreeMap::default(),
@@ -83,12 +83,14 @@ where
 }
 
 #[doc(hidden)]
-impl<'a,I,O,V> Drop for BTreeCache<'a,I,O,V>
+impl<'a, I, O, V> Drop for BTreeCache<'a, I, O, V>
 where
 	I: Ord,
 {
 	fn drop(&mut self) {
 		#[allow(unused_must_use)]
-		unsafe { Box::from_raw(self.f); }
+		unsafe {
+			Box::from_raw(self.f);
+		}
 	}
 }
