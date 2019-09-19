@@ -1,6 +1,6 @@
 [package]
 name = "fn-cache"
-version = "0.4.0"
+version = "0.4.1"
 description = "A copy-less and clone-less function caching library"
 
 documentation = "https://docs.rs/fn-cache"
