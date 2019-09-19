@@ -1,7 +1,9 @@
 use std::collections::HashMap;
+use std::collections::hash_map::RandomState;
 
 use core::cmp::Eq;
 use core::hash::Hash;
+use core::hash::BuildHasher;
 use core::ops::Index;
 
 use crate::FnCache;
@@ -13,30 +15,25 @@ use crate::FnCache;
 /// allowing it to store the input in the cache
 /// without any copies or clones.
 ///
-/// The value in the cache `V` can be different than
-/// the output of the function `O`, as long as
-/// `O` implements `Into<V>`. If no conversion is
-/// required, than the `V` parameter can be elided.
-///
 /// The requirements for a `HashMap` must be met,
 /// specifically the keys must implement `Eq` and
 /// `Hash`, and the following propery must hold:
 ///
 /// ```k1 == k2 -> hash(k1) == hash(k2)```
-pub struct HashCache<'a, I, O, V = O>
+pub struct HashCache<'a, I, O, S = RandomState>
 where
 	I: Eq + Hash,
 {
-	pub(crate) cache: HashMap<I, V>,
+	pub(crate) cache: HashMap<I, O, S>,
 	f: *mut (dyn Fn(&mut Self, &I) -> O + 'a),
 }
 
-impl<'a, I, O, V> FnCache<I, V> for HashCache<'a, I, O, V>
+impl<'a, I, O, S> FnCache<I, O> for HashCache<'a, I, O, S>
 where
 	I: Eq + Hash,
-	O: Into<V>,
+	S: BuildHasher,
 {
-	fn get(&mut self, input: I) -> &V {
+	fn get(&mut self, input: I) -> &O {
 		if self.cache.contains_key(&input) {
 			self.cache.index(&input)
 		} else {
@@ -46,10 +43,9 @@ where
 	}
 }
 
-impl<'a, I, O, V> HashCache<'a, I, O, V>
+impl<'a, I, O> HashCache<'a, I, O, RandomState>
 where
 	I: Eq + Hash,
-	O: Into<V>,
 {
 	/// Create a cache for the provided function. If the
 	/// function stores references, the cache can only
@@ -60,6 +56,27 @@ where
 	{
 		HashCache {
 			cache: HashMap::default(),
+			f: Box::into_raw(Box::new(f)),
+		}
+	}
+}
+
+
+impl<'a, I, O, S> HashCache<'a, I, O, S>
+where
+	I: Eq + Hash,
+	S: BuildHasher,
+{
+	/// Create a HashCache which will use the given hash
+	/// builder to hash keys.
+	///
+	/// See the documentation on `HashMap` for more details.
+	pub fn with_hasher<F>(hash_builder: S, f: F) -> Self
+	where
+		F: Fn(&mut Self, &I) -> O + 'a,
+	{
+		HashCache {
+			cache: HashMap::with_hasher(hash_builder),
 			f: Box::into_raw(Box::new(f)),
 		}
 	}
@@ -88,13 +105,13 @@ where
 
 	/// Removes the input from the cache, returning any value
 	/// if the input was previously in the cache.
-	pub fn remove(&mut self, input: &I) -> Option<V> {
+	pub fn remove(&mut self, input: &I) -> Option<O> {
 		self.cache.remove(input)
 	}
 }
 
 #[doc(hidden)]
-impl<'a, I, O, V> Drop for HashCache<'a, I, O, V>
+impl<'a, I, O, S> Drop for HashCache<'a, I, O, S>
 where
 	I: Eq + Hash,
 {

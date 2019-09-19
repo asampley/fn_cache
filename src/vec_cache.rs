@@ -10,24 +10,15 @@ use crate::FnCache;
 /// every previous value to be calculated for the next
 /// one, consider using a [HashCache](struct.HashCache.html)
 /// instead.
-///
-/// The value in the cache `V` can be different than
-/// the output of the function `O`, as long as
-/// `O` implements `Into<V>`. If no conversion is
-/// required, than the `V` parameter can be elided.
-pub struct VecCache<'a, O, V = O>
-where
-	O: Into<V>,
+pub struct VecCache<'a, O>
 {
-	pub(crate) cache: Vec<V>,
+	pub(crate) cache: Vec<O>,
 	f: *mut (dyn Fn(&mut Self, &usize) -> O + 'a),
 }
 
-impl<'a, O, V> FnCache<usize, V> for VecCache<'a, O, V>
-where
-	O: Into<V>,
+impl<'a, O> FnCache<usize, O> for VecCache<'a, O>
 {
-	fn get(&mut self, input: usize) -> &V {
+	fn get(&mut self, input: usize) -> &O {
 		let len = self.cache.len();
 
 		if len <= input {
@@ -44,9 +35,7 @@ where
 	}
 }
 
-impl<'a, O, V> VecCache<'a, O, V>
-where
-	O: Into<V>,
+impl<'a, O> VecCache<'a, O>
 {
 	/// Create a cache for the provided function. If the
 	/// function stores references, the cache can only
@@ -61,7 +50,7 @@ where
 		}
 	}
 
-	fn compute(&mut self, input: usize) -> V {
+	fn compute(&mut self, input: usize) -> O {
 		unsafe { (*self.f)(self, &input).into() }
 	}
 
@@ -85,9 +74,7 @@ where
 }
 
 #[doc(hidden)]
-impl<'a, O, V> Drop for VecCache<'a, O, V>
-where
-	O: Into<V>,
+impl<'a, O> Drop for VecCache<'a, O>
 {
 	fn drop(&mut self) {
 		#[allow(unused_must_use)]

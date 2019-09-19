@@ -57,13 +57,13 @@
 //! use fn_cache::{FnCache, HashCache};
 //! use num_bigint::BigUint;
 //!
-//! let mut cache = HashCache::<u64,BigUint,Rc<BigUint>>::new(|cache, x|
+//! let mut cache = HashCache::<u64,Rc<BigUint>>::new(|cache, x|
 //!     match x {
 //!         0 => BigUint::new(vec![0]),
 //!         1 => BigUint::new(vec![1]),
 //!         _ => cache.get(x - 1).clone().as_ref()
 //!             + cache.get(x - 2).clone().as_ref(),
-//!     }
+//!     }.into()
 //! );
 //!
 //! assert_eq!(

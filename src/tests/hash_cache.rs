@@ -1,8 +1,31 @@
 use std::rc::Rc;
+use std::hash::BuildHasherDefault;
 
 use crate::tests::*;
 use crate::FnCache;
 use crate::HashCache;
+
+use hashers::fx_hash::FxHasher;
+
+#[test]
+fn with_hasher() {
+	let mut hc = HashCache::with_hasher(
+		BuildHasherDefault::<FxHasher>::default(),
+		square
+	);
+
+	assert!(!hc.cache.contains_key(&1));
+	assert_eq!(hc.get(1), &1);
+	assert!(hc.cache.contains_key(&1));
+	assert_eq!(hc.get(1), &1);
+
+	assert!(!hc.cache.contains_key(&5));
+	assert_eq!(hc.get(5), &25);
+	assert!(hc.cache.contains_key(&5));
+	assert_eq!(hc.get(5), &25);
+
+	assert!(hc.cache.contains_key(&1));
+}
 
 #[test]
 fn get_fn_ptr() {
@@ -111,11 +134,13 @@ fn get_closure_recursive() {
 
 #[test]
 fn get_alternate_value() {
-	let mut hc = HashCache::<usize, u64, Rc<u64>>::new(|cache, x| match x {
-		0 => 0,
-		1 => 1,
-		_ => *cache.get(x - 1).clone() + *cache.get(x - 2).clone(),
-	});
+	let mut hc = HashCache::<usize, Rc<u64>>::new(|cache, x|
+		Rc::new(match x {
+			0 => 0,
+			1 => 1,
+			_ => *cache.get(x - 1).clone() + *cache.get(x - 2).clone(),
+		})
+	);
 
 	assert!(!hc.cache.contains_key(&1));
 	assert_eq!(*hc.get(1).clone(), 1);

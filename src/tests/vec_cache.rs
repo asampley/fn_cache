@@ -102,11 +102,13 @@ fn cache_closure_recursive() {
 
 #[test]
 fn cache_alternate_cache() {
-	let mut vc = VecCache::<u64, Rc<u64>>::new(|cache, x| match x {
-		0 => 0,
-		1 => 1,
-		_ => *cache.get(x - 1).clone() + *cache.get(x - 2).clone(),
-	});
+	let mut vc = VecCache::<Rc<u64>>::new(|cache, x|
+		Rc::new(match x {
+			0 => 0,
+			1 => 1,
+			_ => *cache.get(x - 1).clone() + *cache.get(x - 2).clone(),
+		})
+	);
 
 	assert_eq!(vc.cache.len(), 0);
 	assert_eq!(*vc.get(0).clone(), 0);
