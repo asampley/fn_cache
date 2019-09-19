@@ -48,9 +48,7 @@
 //! For even bigger results, the [num] crate might be employed.
 //! In order to avoid copying the `BigUint`s while accessing the
 //! cache twice, you can to change the result to be stored in an
-//! [Rc]. This can be done without changing the function return
-//! type, because [HashCache] can convert the result of the
-//! function itself.
+//! [Rc].
 //!
 //! ```rust
 //! use std::rc::Rc;
