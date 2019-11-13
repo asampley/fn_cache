@@ -1,5 +1,7 @@
 use crate::FnCache;
 
+use core::marker::PhantomData;
+
 /// A cache for a function which uses a `Vec`.
 ///
 /// This cache is optimized for functions which must
@@ -10,13 +12,16 @@ use crate::FnCache;
 /// every previous value to be calculated for the next
 /// one, consider using a [HashCache](struct.HashCache.html)
 /// instead.
-pub struct VecCache<'a, O>
+pub struct VecCache<'f, O>
 {
 	pub(crate) cache: Vec<O>,
-	f: *mut (dyn Fn(&mut Self, &usize) -> O + 'a),
+	f: *mut (dyn Fn(&mut Self, &usize) -> O + 'f),
+
+	// tell dropck that we will drop the Boxed Fn
+	_phantom: PhantomData<Box<dyn Fn(&mut Self, &usize) -> O + 'f>>,
 }
 
-impl<'a, O> FnCache<usize, O> for VecCache<'a, O>
+impl<'f, O> FnCache<usize, O> for VecCache<'f, O>
 {
 	fn get(&mut self, input: usize) -> &O {
 		let len = self.cache.len();
@@ -35,18 +40,19 @@ impl<'a, O> FnCache<usize, O> for VecCache<'a, O>
 	}
 }
 
-impl<'a, O> VecCache<'a, O>
+impl<'f, O> VecCache<'f, O>
 {
 	/// Create a cache for the provided function. If the
 	/// function stores references, the cache can only
 	/// live as long as those references.
 	pub fn new<F>(f: F) -> Self
 	where
-		F: Fn(&mut Self, &usize) -> O + 'a,
+		F: Fn(&mut Self, &usize) -> O + 'f,
 	{
 		VecCache {
 			cache: Vec::default(),
 			f: Box::into_raw(Box::from(f)),
+			_phantom: Default::default(),
 		}
 	}
 
@@ -74,7 +80,7 @@ impl<'a, O> VecCache<'a, O>
 }
 
 #[doc(hidden)]
-impl<'a, O> Drop for VecCache<'a, O>
+impl<'f, O> Drop for VecCache<'f, O>
 {
 	fn drop(&mut self) {
 		#[allow(unused_must_use)]
