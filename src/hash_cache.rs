@@ -4,6 +4,7 @@ use std::collections::hash_map::RandomState;
 use core::cmp::Eq;
 use core::hash::Hash;
 use core::hash::BuildHasher;
+use core::marker::PhantomData;
 use core::ops::Index;
 
 use crate::FnCache;
@@ -20,15 +21,18 @@ use crate::FnCache;
 /// `Hash`, and the following propery must hold:
 ///
 /// ```k1 == k2 -> hash(k1) == hash(k2)```
-pub struct HashCache<'a, I, O, S = RandomState>
+pub struct HashCache<'f, I, O, S = RandomState>
 where
 	I: Eq + Hash,
 {
 	pub(crate) cache: HashMap<I, O, S>,
-	f: *mut (dyn Fn(&mut Self, &I) -> O + 'a),
+	f: *mut (dyn Fn(&mut Self, &I) -> O + 'f),
+
+	// tell dropck that we will drop the Boxed Fn
+	_phantom: PhantomData<Box<dyn Fn(&mut Self, &I) -> O + 'f>>,
 }
 
-impl<'a, I, O, S> FnCache<I, O> for HashCache<'a, I, O, S>
+impl<'f, I, O, S> FnCache<I, O> for HashCache<'f, I, O, S>
 where
 	I: Eq + Hash,
 	S: BuildHasher,
@@ -43,7 +47,7 @@ where
 	}
 }
 
-impl<'a, I, O> HashCache<'a, I, O, RandomState>
+impl<'f, I, O> HashCache<'f, I, O, RandomState>
 where
 	I: Eq + Hash,
 {
@@ -52,17 +56,18 @@ where
 	/// live as long as those references.
 	pub fn new<F>(f: F) -> Self
 	where
-		F: Fn(&mut Self, &I) -> O + 'a,
+		F: Fn(&mut Self, &I) -> O + 'f,
 	{
 		HashCache {
 			cache: HashMap::default(),
 			f: Box::into_raw(Box::new(f)),
+			_phantom: Default::default(),
 		}
 	}
 }
 
 
-impl<'a, I, O, S> HashCache<'a, I, O, S>
+impl<'f, I, O, S> HashCache<'f, I, O, S>
 where
 	I: Eq + Hash,
 	S: BuildHasher,
@@ -73,11 +78,12 @@ where
 	/// See the documentation on `HashMap` for more details.
 	pub fn with_hasher<F>(hash_builder: S, f: F) -> Self
 	where
-		F: Fn(&mut Self, &I) -> O + 'a,
+		F: Fn(&mut Self, &I) -> O + 'f,
 	{
 		HashCache {
 			cache: HashMap::with_hasher(hash_builder),
 			f: Box::into_raw(Box::new(f)),
+			_phantom: Default::default(),
 		}
 	}
 
@@ -111,7 +117,7 @@ where
 }
 
 #[doc(hidden)]
-impl<'a, I, O, S> Drop for HashCache<'a, I, O, S>
+impl<'f, I, O, S> Drop for HashCache<'f, I, O, S>
 where
 	I: Eq + Hash,
 {
