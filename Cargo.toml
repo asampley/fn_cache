@@ -1,6 +1,6 @@
 [package]
 name = "fn-cache"
-version = "0.5.0"
+version = "1.0.0"
 description = "A copy-less and clone-less function caching library"
 
 documentation = "https://docs.rs/fn-cache"
@@ -10,10 +10,11 @@ readme = "README.md"
 keywords = ["cache", "memoization"]
 categories = ["caching"]
 
-authors = ["Alex Sampley <sampley@ualberta.ca>"]
+authors = ["Alex Sampley <alex.sampley@gmail.com>"]
 license = "MIT"
-edition = "2018"
+edition = "2021"
 
 [dev-dependencies]
-num-bigint = "0.2"
-hashers = "1.0.0"
+num-bigint = "0.4"
+hashers = "1.0.1"
+once_cell = "1.17.0"

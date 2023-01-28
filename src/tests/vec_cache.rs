@@ -24,7 +24,7 @@ fn cache_fn_ptr() {
 
 #[test]
 fn cache_closure() {
-	let mut vc = VecCache::<u64>::new(|_cache, x| *x as u64 * *x as u64);
+	let mut vc = VecCache::<u64>::new(|x| *x as u64 * *x as u64);
 
 	assert_eq!(vc.cache.len(), 0);
 	assert_eq!(vc.get(0), &0);
@@ -44,7 +44,7 @@ fn cache_closure() {
 fn cache_closure_capture() {
 	let y = 3;
 
-	let mut vc = VecCache::<u64>::new(|_cache, x| y * *x as u64 * *x as u64);
+	let mut vc = VecCache::<u64>::new(|x| y * *x as u64 * *x as u64);
 
 	assert_eq!(vc.cache.len(), 0);
 	assert_eq!(vc.get(0), &0);
@@ -62,7 +62,7 @@ fn cache_closure_capture() {
 
 #[test]
 fn cache_fn_ptr_recursive() {
-	let mut vc = VecCache::new(fib);
+	let mut vc = VecCache::recursive(fib);
 
 	assert_eq!(vc.cache.len(), 0);
 	assert_eq!(vc.get(0), &0);
@@ -80,7 +80,7 @@ fn cache_fn_ptr_recursive() {
 
 #[test]
 fn cache_closure_recursive() {
-	let mut vc = VecCache::<u64>::new(|cache, x| match x {
+	let mut vc = VecCache::<u64>::recursive(|cache, x| match x {
 		0 => 0,
 		1 => 1,
 		_ => *cache.get(x - 1) + *cache.get(x - 2),
@@ -102,13 +102,13 @@ fn cache_closure_recursive() {
 
 #[test]
 fn cache_alternate_cache() {
-	let mut vc = VecCache::<Rc<u64>>::new(|cache, x|
+	let mut vc = VecCache::<Rc<u64>>::recursive(|cache, x| {
 		Rc::new(match x {
 			0 => 0,
 			1 => 1,
 			_ => *cache.get(x - 1).clone() + *cache.get(x - 2).clone(),
 		})
-	);
+	});
 
 	assert_eq!(vc.cache.len(), 0);
 	assert_eq!(*vc.get(0).clone(), 0);
@@ -126,7 +126,7 @@ fn cache_alternate_cache() {
 
 #[test]
 fn clear() {
-	let mut vc = VecCache::<usize>::new(|_cache, x| *x);
+	let mut vc = VecCache::<usize>::new(|x| *x);
 
 	vc.get(2);
 
@@ -139,7 +139,7 @@ fn clear() {
 
 #[test]
 fn len() {
-	let mut vc = VecCache::<usize>::new(|_cache, x| *x);
+	let mut vc = VecCache::<usize>::new(|x| *x);
 
 	vc.get(0);
 	vc.get(1);
@@ -150,7 +150,7 @@ fn len() {
 
 #[test]
 fn reserve() {
-	let mut vc = VecCache::<usize>::new(|_cache, x| *x);
+	let mut vc = VecCache::<usize>::new(|x| *x);
 
 	vc.get(0);
 	vc.get(1);
@@ -168,4 +168,18 @@ fn reserve() {
 			additional
 		);
 	}
+}
+
+#[test]
+fn static_context() {
+	use once_cell::sync::Lazy;
+	use std::sync::Mutex;
+
+	static HC: Lazy<Mutex<VecCache<usize>>> = Lazy::new(|| Mutex::new(VecCache::new(|x| *x)));
+
+	let mut hc = HC.lock().unwrap();
+
+	hc.get(0);
+	hc.get(1);
+	hc.get(2);
 }

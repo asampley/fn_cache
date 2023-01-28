@@ -1,8 +1,8 @@
 use crate::FnCache;
 
-use core::marker::PhantomData;
+use std::sync::Arc;
 
-/// A cache for a function which uses a `Vec`.
+/// A cache for a function which uses a [`Vec`].
 ///
 /// This cache is optimized for functions which must
 /// be calculated in order, so that there can be no
@@ -10,19 +10,14 @@ use core::marker::PhantomData;
 ///
 /// If the function does not start at zero, or require
 /// every previous value to be calculated for the next
-/// one, consider using a [HashCache](struct.HashCache.html)
+/// one, consider using a [`HashCache`](crate::HashCache)
 /// instead.
-pub struct VecCache<'f, O>
-{
+pub struct VecCache<'f, O> {
 	pub(crate) cache: Vec<O>,
-	f: *mut (dyn Fn(&mut Self, &usize) -> O + 'f),
-
-	// tell dropck that we will drop the Boxed Fn
-	_phantom: PhantomData<Box<dyn Fn(&mut Self, &usize) -> O + 'f>>,
+	f: Arc<dyn Fn(&mut Self, &usize) -> O + 'f + Send + Sync>,
 }
 
-impl<'f, O> FnCache<usize, O> for VecCache<'f, O>
-{
+impl<'f, O> FnCache<usize, O> for VecCache<'f, O> {
 	fn get(&mut self, input: usize) -> &O {
 		let len = self.cache.len();
 
@@ -40,24 +35,32 @@ impl<'f, O> FnCache<usize, O> for VecCache<'f, O>
 	}
 }
 
-impl<'f, O> VecCache<'f, O>
-{
+impl<'f, O> VecCache<'f, O> {
 	/// Create a cache for the provided function. If the
 	/// function stores references, the cache can only
 	/// live as long as those references.
 	pub fn new<F>(f: F) -> Self
 	where
-		F: Fn(&mut Self, &usize) -> O + 'f,
+		F: Fn(&usize) -> O + 'f + Send + Sync,
+	{
+		Self::recursive(move |_, x| f(x))
+	}
+
+	/// Create a cache for the provided recursive function.
+	/// If the function stores references, the cache can
+	/// only live as long as those references.
+	pub fn recursive<F>(f: F) -> Self
+	where
+		F: Fn(&mut Self, &usize) -> O + 'f + Send + Sync,
 	{
 		VecCache {
 			cache: Vec::default(),
-			f: Box::into_raw(Box::from(f)),
-			_phantom: Default::default(),
+			f: Arc::new(f),
 		}
 	}
 
 	fn compute(&mut self, input: usize) -> O {
-		unsafe { (*self.f)(self, &input).into() }
+		(self.f.clone())(self, &input)
 	}
 
 	/// Clears the cache. removing all values.
@@ -76,16 +79,5 @@ impl<'f, O> VecCache<'f, O>
 	/// reserve more space to avoid frequent reallocations.
 	pub fn reserve(&mut self, additional: usize) {
 		self.cache.reserve(additional)
-	}
-}
-
-#[doc(hidden)]
-impl<'f, O> Drop for VecCache<'f, O>
-{
-	fn drop(&mut self) {
-		#[allow(unused_must_use)]
-		unsafe {
-			Box::from_raw(self.f);
-		}
 	}
 }

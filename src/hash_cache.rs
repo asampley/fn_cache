@@ -1,15 +1,15 @@
-use std::collections::HashMap;
 use std::collections::hash_map::RandomState;
+use std::collections::HashMap;
 
 use core::cmp::Eq;
-use core::hash::Hash;
 use core::hash::BuildHasher;
-use core::marker::PhantomData;
+use core::hash::Hash;
 use core::ops::Index;
+use std::sync::Arc;
 
 use crate::FnCache;
 
-/// A cache for a function which uses a `HashMap`.
+/// A cache for a function which uses a [`HashMap`].
 ///
 /// The cache takes ownership of all inputs, but
 /// only passes a reference to the function,
@@ -26,10 +26,7 @@ where
 	I: Eq + Hash,
 {
 	pub(crate) cache: HashMap<I, O, S>,
-	f: *mut (dyn Fn(&mut Self, &I) -> O + 'f),
-
-	// tell dropck that we will drop the Boxed Fn
-	_phantom: PhantomData<Box<dyn Fn(&mut Self, &I) -> O + 'f>>,
+	f: Arc<dyn Fn(&mut Self, &I) -> O + 'f + Send + Sync>,
 }
 
 impl<'f, I, O, S> FnCache<I, O> for HashCache<'f, I, O, S>
@@ -56,16 +53,24 @@ where
 	/// live as long as those references.
 	pub fn new<F>(f: F) -> Self
 	where
-		F: Fn(&mut Self, &I) -> O + 'f,
+		F: Fn(&I) -> O + 'f + Send + Sync,
+	{
+		Self::recursive(move |_, i| f(i))
+	}
+
+	/// Create a cache for the provided recursive function.
+	/// If the function stores references, the cache can
+	/// only live as long as those references.
+	pub fn recursive<F>(f: F) -> Self
+	where
+		F: Fn(&mut Self, &I) -> O + 'f + Send + Sync,
 	{
 		HashCache {
 			cache: HashMap::default(),
-			f: Box::into_raw(Box::new(f)),
-			_phantom: Default::default(),
+			f: Arc::new(f),
 		}
 	}
 }
-
 
 impl<'f, I, O, S> HashCache<'f, I, O, S>
 where
@@ -75,20 +80,30 @@ where
 	/// Create a HashCache which will use the given hash
 	/// builder to hash keys.
 	///
-	/// See the documentation on `HashMap` for more details.
+	/// See the documentation on [`HashMap::with_hasher`] for more details.
 	pub fn with_hasher<F>(hash_builder: S, f: F) -> Self
 	where
-		F: Fn(&mut Self, &I) -> O + 'f,
+		F: Fn(&I) -> O + 'f + Send + Sync,
+	{
+		Self::recursive_with_hasher(hash_builder, move |_, i| f(i))
+	}
+
+	/// Create a recursive HashCache which will use the given hash
+	/// builder to hash keys.
+	///
+	/// See the documentation on [`HashMap::with_hasher`] for more details.
+	pub fn recursive_with_hasher<F>(hash_builder: S, f: F) -> Self
+	where
+		F: Fn(&mut Self, &I) -> O + 'f + Send + Sync,
 	{
 		HashCache {
 			cache: HashMap::with_hasher(hash_builder),
-			f: Box::into_raw(Box::new(f)),
-			_phantom: Default::default(),
+			f: Arc::new(f),
 		}
 	}
 
 	fn compute(&mut self, input: &I) -> O {
-		unsafe { (*self.f)(self, input) }
+		(self.f.clone())(self, input)
 	}
 
 	/// Clears the cache, removing all key-value pairs.
@@ -113,18 +128,5 @@ where
 	/// if the input was previously in the cache.
 	pub fn remove(&mut self, input: &I) -> Option<O> {
 		self.cache.remove(input)
-	}
-}
-
-#[doc(hidden)]
-impl<'f, I, O, S> Drop for HashCache<'f, I, O, S>
-where
-	I: Eq + Hash,
-{
-	fn drop(&mut self) {
-		#[allow(unused_must_use)]
-		unsafe {
-			Box::from_raw(self.f);
-		}
 	}
 }

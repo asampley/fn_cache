@@ -1,19 +1,8 @@
 use std::rc::Rc;
 
+use crate::tests::*;
 use crate::BTreeCache;
 use crate::FnCache;
-
-fn square(_cache: &mut BTreeCache<u32, u64>, x: &u32) -> u64 {
-	*x as u64 * *x as u64
-}
-
-fn fib(cache: &mut BTreeCache<u32, u64>, x: &u32) -> u64 {
-	match x {
-		0 => 0,
-		1 => 1,
-		_ => *cache.get(x - 1) + *cache.get(x - 2),
-	}
-}
 
 #[test]
 fn get_fn_ptr() {
@@ -34,7 +23,7 @@ fn get_fn_ptr() {
 
 #[test]
 fn get_closure() {
-	let mut bc = BTreeCache::<u32, u64>::new(|_cache, &x| x as u64 * x as u64);
+	let mut bc = BTreeCache::new(|&x| x as u64 * x as u64);
 
 	assert!(!bc.cache.contains_key(&1));
 	assert_eq!(bc.get(1), &1);
@@ -53,7 +42,7 @@ fn get_closure() {
 fn get_closure_capture() {
 	let y = 3;
 
-	let mut bc = BTreeCache::<u32, u64>::new(|_cache, &x| y * x as u64 * x as u64);
+	let mut bc = BTreeCache::new(|&x| y * x as u64 * x as u64);
 
 	assert!(!bc.cache.contains_key(&1));
 	assert_eq!(bc.get(1), &3);
@@ -70,7 +59,7 @@ fn get_closure_capture() {
 
 #[test]
 fn get_fn_ptr_recursive() {
-	let mut bc = BTreeCache::new(fib);
+	let mut bc = BTreeCache::recursive(fib);
 
 	assert!(!bc.cache.contains_key(&1));
 	assert_eq!(bc.get(1), &1);
@@ -94,7 +83,7 @@ fn get_fn_ptr_recursive() {
 
 #[test]
 fn get_closure_recursive() {
-	let mut bc = BTreeCache::<usize, u64>::new(|cache, x| match x {
+	let mut bc = BTreeCache::<usize, u64>::recursive(|cache, x| match x {
 		0 => 0,
 		1 => 1,
 		_ => *cache.get(x - 1) + *cache.get(x - 2),
@@ -122,10 +111,13 @@ fn get_closure_recursive() {
 
 #[test]
 fn get_alternate_value() {
-	let mut bc = BTreeCache::<usize, u64, Rc<u64>>::new(|cache, x| match x {
-		0 => 0,
-		1 => 1,
-		_ => *cache.get(x - 1).clone() + *cache.get(x - 2).clone(),
+	let mut bc = BTreeCache::<usize, Rc<u64>>::recursive(|cache, x| {
+		match x {
+			0 => 0,
+			1 => 1,
+			_ => *cache.get(x - 1).clone() + *cache.get(x - 2).clone(),
+		}
+		.into()
 	});
 
 	assert!(!bc.cache.contains_key(&1));
@@ -150,7 +142,7 @@ fn get_alternate_value() {
 
 #[test]
 fn clear() {
-	let mut bc = BTreeCache::<usize, usize>::new(|_cache, x| *x);
+	let mut bc = BTreeCache::new(|x| *x);
 
 	bc.get(0);
 	bc.get(1);
@@ -165,7 +157,7 @@ fn clear() {
 
 #[test]
 fn len() {
-	let mut bc = BTreeCache::<usize, usize>::new(|_cache, x| *x);
+	let mut bc = BTreeCache::new(|x| *x);
 
 	bc.get(0);
 	bc.get(1);
@@ -176,7 +168,7 @@ fn len() {
 
 #[test]
 fn remove() {
-	let mut bc = BTreeCache::<usize, usize>::new(|_cache, x| *x);
+	let mut bc = BTreeCache::new(|x| *x);
 
 	bc.get(0);
 	bc.get(1);
@@ -186,4 +178,19 @@ fn remove() {
 	assert_eq!(bc.remove(&1), Some(1));
 	assert_eq!(bc.len(), 2);
 	assert_eq!(bc.remove(&1), None);
+}
+
+#[test]
+fn static_context() {
+	use once_cell::sync::Lazy;
+	use std::sync::Mutex;
+
+	static HC: Lazy<Mutex<BTreeCache<usize, usize>>> =
+		Lazy::new(|| Mutex::new(BTreeCache::new(|x| *x)));
+
+	let mut hc = HC.lock().unwrap();
+
+	hc.get(0);
+	hc.get(1);
+	hc.get(2);
 }

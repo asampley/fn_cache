@@ -1,5 +1,5 @@
-use std::rc::Rc;
 use std::hash::BuildHasherDefault;
+use std::rc::Rc;
 
 use crate::tests::*;
 use crate::FnCache;
@@ -9,10 +9,7 @@ use hashers::fx_hash::FxHasher;
 
 #[test]
 fn with_hasher() {
-	let mut hc = HashCache::with_hasher(
-		BuildHasherDefault::<FxHasher>::default(),
-		square
-	);
+	let mut hc = HashCache::with_hasher(BuildHasherDefault::<FxHasher>::default(), square);
 
 	assert!(!hc.cache.contains_key(&1));
 	assert_eq!(hc.get(1), &1);
@@ -46,7 +43,7 @@ fn get_fn_ptr() {
 
 #[test]
 fn get_closure() {
-	let mut hc = HashCache::<usize, u64>::new(|_cache, &x| x as u64 * x as u64);
+	let mut hc = HashCache::new(|&x| x as u64 * x as u64);
 
 	assert!(!hc.cache.contains_key(&1));
 	assert_eq!(hc.get(1), &1);
@@ -65,7 +62,7 @@ fn get_closure() {
 fn get_closure_capture() {
 	let y = 3;
 
-	let mut hc = HashCache::<usize, u64>::new(|_cache, &x| y * x as u64 * x as u64);
+	let mut hc = HashCache::new(|&x| y * x as u64 * x as u64);
 
 	assert!(!hc.cache.contains_key(&1));
 	assert_eq!(hc.get(1), &3);
@@ -82,7 +79,7 @@ fn get_closure_capture() {
 
 #[test]
 fn get_fn_ptr_recursive() {
-	let mut hc = HashCache::new(fib);
+	let mut hc = HashCache::recursive(fib);
 
 	assert!(!hc.cache.contains_key(&1));
 	assert_eq!(hc.get(1), &1);
@@ -106,7 +103,7 @@ fn get_fn_ptr_recursive() {
 
 #[test]
 fn get_closure_recursive() {
-	let mut hc = HashCache::<usize, u64>::new(|cache, x| match x {
+	let mut hc = HashCache::<usize, u64>::recursive(|cache, x| match x {
 		0 => 0,
 		1 => 1,
 		_ => *cache.get(x - 1) + *cache.get(x - 2),
@@ -134,13 +131,13 @@ fn get_closure_recursive() {
 
 #[test]
 fn get_alternate_value() {
-	let mut hc = HashCache::<usize, Rc<u64>>::new(|cache, x|
+	let mut hc = HashCache::<usize, Rc<u64>>::recursive(|cache, x| {
 		Rc::new(match x {
 			0 => 0,
 			1 => 1,
 			_ => *cache.get(x - 1).clone() + *cache.get(x - 2).clone(),
 		})
-	);
+	});
 
 	assert!(!hc.cache.contains_key(&1));
 	assert_eq!(*hc.get(1).clone(), 1);
@@ -164,7 +161,7 @@ fn get_alternate_value() {
 
 #[test]
 fn clear() {
-	let mut hc = HashCache::<usize, usize>::new(|_cache, x| *x);
+	let mut hc = HashCache::<usize, usize>::new(|x| *x);
 
 	hc.get(0);
 	hc.get(1);
@@ -179,7 +176,7 @@ fn clear() {
 
 #[test]
 fn len() {
-	let mut hc = HashCache::<usize, usize>::new(|_cache, x| *x);
+	let mut hc = HashCache::<usize, usize>::new(|x| *x);
 
 	hc.get(0);
 	hc.get(1);
@@ -190,7 +187,7 @@ fn len() {
 
 #[test]
 fn reserve() {
-	let mut hc = HashCache::<usize, usize>::new(|_cache, x| *x);
+	let mut hc = HashCache::<usize, usize>::new(|x| *x);
 
 	hc.get(0);
 	hc.get(1);
@@ -212,7 +209,7 @@ fn reserve() {
 
 #[test]
 fn remove() {
-	let mut hc = HashCache::<usize, usize>::new(|_cache, x| *x);
+	let mut hc = HashCache::<usize, usize>::new(|x| *x);
 
 	hc.get(0);
 	hc.get(1);
@@ -222,4 +219,19 @@ fn remove() {
 	assert_eq!(hc.remove(&1), Some(1));
 	assert_eq!(hc.len(), 2);
 	assert_eq!(hc.remove(&1), None);
+}
+
+#[test]
+fn static_context() {
+	use once_cell::sync::Lazy;
+	use std::sync::Mutex;
+
+	static HC: Lazy<Mutex<HashCache<usize, usize>>> =
+		Lazy::new(|| Mutex::new(HashCache::new(|x| *x)));
+
+	let mut hc = HC.lock().unwrap();
+
+	hc.get(0);
+	hc.get(1);
+	hc.get(2);
 }

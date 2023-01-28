@@ -5,7 +5,7 @@ mod vec_cache;
 
 use crate::FnCache;
 
-fn square(_cache: &mut impl FnCache<usize, u64>, x: &usize) -> u64 {
+fn square(x: &usize) -> u64 {
 	*x as u64 * *x as u64
 }
 
