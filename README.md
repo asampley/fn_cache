@@ -12,28 +12,65 @@ cloning or copying, allowing functions to return
 large objects, while the cache only returns a reference
 to them instead of copying them.
 
-## Allowed functions
+# Allowed functions
 This crate attempts to remain fairly flexible with
 the functions it accepts. All of the following should
 be allowed:
-  * [fn][fn primitive] types.
-  * [Fn] types that have no references.
-  * [Fn] + 'static types that take only static references.
-  * [Fn] + 'a types that take references of lifetime 'a.
+  * [`fn`][fn primitive] types.
+  * [`Fn`] types that have no references.
+  * [`Fn`] + 'static types that take only static references.
+  * [`Fn`] + 'a types that take references of lifetime 'a.
 
-For obvious reasons, [FnMut] and [FnOnce] are not allowed,
+For obvious reasons, [`FnMut`] and [`FnOnce`] are not allowed,
 as functions need to be rerunnable and pure.
 
-## Examples
+# Examples
+
+The caches can handle recursive functions, with a shortcut
+for defining it with non-recursive functions. Each cache
+has a `recursive` function to create a recursion capable
+cache, but requires the function to accept the cache as the
+first argument. Each `new` function takes a function that
+does not require the cache as an argument.
+
+## Non-recursive
+
+Here is an example for a function that takes a while to
+calculate. Instead of running the calculations each time
+you'd like to do it just once, and recall the value. The
+results are stored in a `HashCache` for random access.
+
+```rust
+use fn_cache::{FnCache, HashCache};
+use std::{thread, time};
+
+let sleep_time = time::Duration::from_secs(3);
+
+let mut cache = HashCache::new(|&x| {
+    thread::sleep(sleep_time);
+    x
+});
+
+let start = time::Instant::now();
+assert_eq!(cache.get(100), &100);
+assert_eq!(cache.get(100), &100);
+
+// time elapsed is only slightly longer than the sleep time
+// far less than twice.
+assert!(time::Instant::now() - start < sleep_time.mul_f32(1.1));
+```
+
+## Recursive
+
 The following example shows a recursive fibonacci
 implementation, which would be O(2ⁿ) without
 memoization (caching). With memoization, it becomes
 O(n), and can easily be calculated.
 
 ```rust
-use fn_cache::HashCache;
+use fn_cache::{FnCache, HashCache};
 
-let mut cache = HashCache::<u8,u128>::new(|cache, x|
+let mut cache = HashCache::<u8,u128>::recursive(|cache, x|
     match x {
         0 => 0,
         1 => 1,
@@ -50,20 +87,26 @@ assert_eq!(
 For even bigger results, the [num] crate might be employed.
 In order to avoid copying the `BigUint`s while accessing the
 cache twice, you can to change the result to be stored in an
-[Rc].
+[`Rc`]. Additionally, since the inputs start at 0 and each value
+must be filled before the next is calculated, you might use a
+`VecCache` as an optimization.
+
+**Note:** The only reason you need an Rc is because you need two
+references at the same time. If only a single reference is
+needed for the recursion, Rc is unnecessary.
 
 ```rust
 use std::rc::Rc;
-use fn_cache::HashCache;
+use fn_cache::{FnCache, VecCache};
 use num_bigint::BigUint;
 
-let mut cache = HashCache::<u64,Rc<BigUint>>::new(|cache, x|
+let mut cache = VecCache::<Rc<BigUint>>::recursive(|cache, x|
     match x {
         0 => BigUint::new(vec![0]),
         1 => BigUint::new(vec![1]),
         _ => cache.get(x - 1).clone().as_ref()
             + cache.get(x - 2).clone().as_ref(),
-    }
+    }.into()
 );
 
 assert_eq!(
@@ -73,9 +116,8 @@ assert_eq!(
 ```
 
 [fn primitive]: https://doc.rust-lang.org/std/primitive.fn.html
-[Fn]: https://doc.rust-lang.org/std/ops/trait.Fn.html
-[FnMut]: https://doc.rust-lang.org/std/ops/trait.FnMut.html
-[FnOnce]: https://doc.rust-lang.org/std/ops/trait.FnOnce.html
-[HashCache]: struct.HashCache.html
-[Rc]: https://doc.rust-lang.org/std/rc/struct.Rc.html
+[`Fn`]: https://doc.rust-lang.org/std/ops/trait.Fn.html
+[`FnMut`]: https://doc.rust-lang.org/std/ops/trait.FnMut.html
+[`FnOnce`]: https://doc.rust-lang.org/std/ops/trait.FnOnce.html
+[`Rc`]: https://doc.rust-lang.org/std/rc/struct.Rc.html
 [num]: https://docs.rs/num/
