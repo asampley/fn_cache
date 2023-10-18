@@ -1,4 +1,4 @@
-use crate::FnCache;
+use crate::{FnCache, FnCacheMany};
 
 use std::sync::Arc;
 
@@ -27,11 +27,28 @@ impl<'f, O> FnCache<usize, O> for VecCache<'f, O> {
 
 		while self.cache.len() <= input {
 			let next = self.cache.len();
-			let next_val = self.compute(next).into();
+			let next_val = self.compute(next);
 			self.cache.push(next_val);
 		}
 
 		self.cache.get(input).unwrap()
+	}
+}
+
+impl<'f, O> FnCacheMany<usize, O> for VecCache<'f, O> {
+	fn get_many<const N: usize>(&mut self, inputs: [usize; N]) -> [&O; N] {
+		let len = self.cache.len();
+		let max = inputs.iter().max().copied().unwrap_or(0);
+
+		if len <= max {
+			self.cache.reserve(max - len + 1);
+		}
+
+		for i in inputs {
+			self.get(i);
+		}
+
+		inputs.map(|i| self.cache.get(i).unwrap())
 	}
 }
 

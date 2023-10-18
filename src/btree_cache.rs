@@ -4,7 +4,7 @@ use core::cmp::Ord;
 use core::ops::Index;
 use std::sync::Arc;
 
-use crate::FnCache;
+use crate::{FnCache, FnCacheMany};
 
 /// A cache for a function which uses a [`BTreeMap`].
 ///
@@ -32,8 +32,21 @@ where
 			self.cache.index(&input)
 		} else {
 			let output = self.compute(&input);
-			self.cache.entry(input).or_insert(output.into())
+			self.cache.entry(input).or_insert(output)
 		}
+	}
+}
+
+impl<'f, I, O> FnCacheMany<I, O> for BTreeCache<'f, I, O>
+where
+	I: Ord + Clone,
+{
+	fn get_many<const N: usize>(&mut self, inputs: [I; N]) -> [&O; N] {
+		for i in &inputs {
+			self.get(i.clone());
+		}
+
+		inputs.map(|i| self.cache.get(&i).unwrap())
 	}
 }
 

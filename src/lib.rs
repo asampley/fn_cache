@@ -84,31 +84,26 @@
 //!
 //! For even bigger results, the [num] crate might be employed.
 //! In order to avoid copying the `BigUint`s while accessing the
-//! cache twice, you can to change the result to be stored in an
-//! [`Rc`]. Additionally, since the inputs start at 0 and each value
-//! must be filled before the next is calculated, you might use a
-//! [`VecCache`] as an optimization.
-//!
-//! **Note:** The only reason you need an Rc is because you need two
-//! references at the same time. If only a single reference is
-//! needed for the recursion, Rc is unnecessary.
+//! cache twice, using [`FnCacheMany::get_many`] can be used to get
+//! multiple values at once, to avoid trying to take a reference and
+//! then mutating again. Additionally, since the inputs start at 0
+//! and each value must be filled before the next is calculated, you
+//! might use a [`VecCache`] as an optimization.
 //!
 //! ```rust
-//! use std::rc::Rc;
-//! use fn_cache::{FnCache, VecCache};
+//! use fn_cache::{FnCache, FnCacheMany, VecCache};
 //! use num_bigint::BigUint;
 //!
-//! let mut cache = VecCache::<Rc<BigUint>>::recursive(|cache, x|
+//! let mut cache = VecCache::recursive(|cache, x|
 //!     match x {
 //!         0 => BigUint::new(vec![0]),
 //!         1 => BigUint::new(vec![1]),
-//!         _ => cache.get(x - 1).clone().as_ref()
-//!             + cache.get(x - 2).clone().as_ref(),
-//!     }.into()
+//!         _ => cache.get_many([x - 1, x - 2]).into_iter().sum(),
+//!     }
 //! );
 //!
 //! assert_eq!(
-//!     cache.get(999).clone().as_ref(),
+//!     cache.get(999),
 //!     &BigUint::parse_bytes(b"26863810024485359386146727202142923967616609318986952340123175997617981700247881689338369654483356564191827856161443356312976673642210350324634850410377680367334151172899169723197082763985615764450078474174626", 10).unwrap()
 //! );
 //! ```
@@ -123,6 +118,6 @@ mod tests;
 mod vec_cache;
 
 pub use crate::btree_cache::BTreeCache;
-pub use crate::fn_cache::FnCache;
+pub use crate::fn_cache::{FnCache, FnCacheMany};
 pub use crate::hash_cache::HashCache;
 pub use crate::vec_cache::VecCache;
