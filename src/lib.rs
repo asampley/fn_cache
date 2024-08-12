@@ -112,12 +112,15 @@
 //! [`Rc`]: std::rc::Rc
 //! [num]: https://docs.rs/num/
 mod btree_cache;
+mod cache;
 mod fn_cache;
 mod hash_cache;
+mod raw_cache;
 mod tests;
 mod vec_cache;
 
 pub use crate::btree_cache::BTreeCache;
+pub use crate::raw_cache::RawCache;
 pub use crate::fn_cache::{FnCache, FnCacheMany};
 pub use crate::hash_cache::HashCache;
 pub use crate::vec_cache::VecCache;

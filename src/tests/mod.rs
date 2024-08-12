@@ -1,5 +1,6 @@
 #![cfg(test)]
 mod btree_cache;
+mod raw_cache;
 mod hash_cache;
 mod vec_cache;
 
