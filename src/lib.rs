@@ -108,19 +108,49 @@
 //! );
 //! ```
 //!
+//! ## Implementing your own Container
+//!
+//! Maybe you've got a more efficient container for your use case or access pattern. You can have
+//! [`GenericCache`] do most of the heavy lifting (in fact that's what `HashCache` and `BTreeCache`
+//! do!), by simply implementing [`SparseContainer`] on your storage type.
+//!
+//! ```rust
+//! use std::collections::BTreeMap;
+//! use fn_cache::{GenericCache, container::SparseContainer};
+//!
+//! type MyCache<'f, I, O> = GenericCache<'f, MyContainer<I, O>>;
+//!
+//! struct MyContainer<I, O>(BTreeMap<I, O>);
+//!
+//! impl<I: Ord, O> SparseContainer for MyContainer<I, O> {
+//!     type Input = I;
+//!     type Output = O;
+//!
+//!     fn get(&self, input: &Self::Input) -> Option<&Self::Output> {
+//!         self.0.get(input)
+//!     }
+//!
+//!     fn put(&mut self, input: Self::Input, output: Self::Output) -> &Self::Output {
+//!         self.0.entry(input).or_insert(output)
+//!     }
+//! }
+//! ```
+//!
 //! [fn primitive]: https://doc.rust-lang.org/std/primitive.fn.html
 //! [`Rc`]: std::rc::Rc
 //! [num]: https://docs.rs/num/
-mod btree_cache;
-mod cache;
-mod fn_cache;
-mod hash_cache;
-mod raw_cache;
+pub mod btree_cache;
+pub mod container;
+pub mod fn_cache;
+pub mod generic_cache;
+pub mod hash_cache;
+pub mod vec_cache;
+
+#[cfg(test)]
 mod tests;
-mod vec_cache;
 
 pub use crate::btree_cache::BTreeCache;
-pub use crate::raw_cache::RawCache;
 pub use crate::fn_cache::{FnCache, FnCacheMany};
+pub use crate::generic_cache::GenericCache;
 pub use crate::hash_cache::HashCache;
 pub use crate::vec_cache::VecCache;

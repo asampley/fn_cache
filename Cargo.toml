@@ -1,6 +1,6 @@
 [package]
 name = "fn-cache"
-version = "1.1.1"
+version = "2.0.0"
 description = "A copy-less and clone-less function caching library"
 
 documentation = "https://docs.rs/fn-cache"
@@ -13,6 +13,11 @@ categories = ["caching"]
 authors = ["Alex Sampley <alex.sampley@gmail.com>"]
 license = "MIT"
 edition = "2021"
+
+[dependencies.derive_more]
+version = "1.0.0"
+default-features = false
+features = ["deref", "deref_mut", "from"]
 
 [dev-dependencies]
 num-bigint = "0.4"
